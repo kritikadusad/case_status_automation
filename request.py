@@ -27,4 +27,4 @@ additional_details = "".join(case_processed[1])
 to_send = "This is an automated message:" + "\n" + status + "\n" + additional_details
 driver.close()
 
-message = client.messages.create(body= to_send, from_= '+16072282950', to= '+16073798219')
+message = client.messages.create(body= to_send, from_= '+16072282950', to= '+16073795911')
