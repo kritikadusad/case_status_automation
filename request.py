@@ -4,27 +4,56 @@ from selenium.webdriver.chrome.options import Options
 import sys, os
 from twilio.rest import Client
 
-account_sid = os.environ['TWILIO_ACCOUNT_SID']
-auth_token = os.environ['TWILIO_AUTH_TOKEN']
-client = Client(account_sid, auth_token)
+account_sid = os.environ["TWILIO_ACCOUNT_SID"]
+auth_token = os.environ["TWILIO_AUTH_TOKEN"]
+URL = "https://egov.uscis.gov/casestatus/landing.do"
 
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-driver = webdriver.Chrome(chrome_options=chrome_options)
-driver.get("https://egov.uscis.gov/casestatus/landing.do")
-assert "Case Status" in driver.title
-elem = driver.find_element_by_name("appReceiptNum")
-elem.clear()
-elem.send_keys("EAC1990110956")
-elem.send_keys(Keys.RETURN)
-submit = driver.find_element_by_name("initCaseSearch").submit()
-assert "Error." not in driver.page_source
-form = driver.find_element_by_name("caseStatusForm")
-case = form.text
-case_processed = case.lstrip("x").split("\n")[1:3]
-status = "".join(case_processed[0])
-additional_details = "".join(case_processed[1])
-to_send = "This is an automated message:" + "\n" + status + "\n" + additional_details
-driver.close()
 
-message = client.messages.create(body= to_send, from_= '+16072282950', to= '+16073795911')
+class Form:
+    def __init__(self, form):
+        self.content = form.text.lstrip("x").split("\n")[1:3]
+
+    def status(self):
+        return "".join(self.content[0])
+
+    def additional_info(self):
+        return "".join(self.content[1])
+
+
+def invisible_driver(URL):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    driver = webdriver.Chrome(chrome_options=chrome_options)
+    driver.get(URL)
+    assert "Case Status" in driver.title
+    return driver
+
+
+def submit_form(driver, receipt_num):
+    elem = driver.find_element_by_name("appReceiptNum")
+    elem.clear()
+    elem.send_keys(receipt_num)
+    elem.send_keys(Keys.RETURN)
+    submit = driver.find_element_by_name("initCaseSearch").submit()
+    assert "Error." not in driver.page_source
+
+
+def check_case_status(URL, receipt_num):
+    driver = invisible_driver(URL)
+    submit_form(driver, receipt_num)
+    form = Form(driver.find_element_by_name("caseStatusForm"))
+    case_status = form.status() + "\n" + form.additional_info()
+    driver.close()
+    return case_status
+
+
+def send_sms(case_status, receiver):
+    client = Client(account_sid, auth_token)
+    message_body = "Your USCIS case status is as follows" + "\n" + case_status
+    message = client.messages.create(
+        body=message_body, from_="+16072282950", to=receiver
+    )
+
+
+case_status = check_case_status(URL, "EAC1990110956")
+send_sms(case_status, receiver="+16073798219")
