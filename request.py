@@ -58,5 +58,5 @@ def send_sms(case_status):
         )
 
 
-case_status = check_case_status(URL, "EAC1990110956")
+case_status = check_case_status(URL, os.environ["RECEIPT_NUM"])
 send_sms(case_status)
