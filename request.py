@@ -47,14 +47,16 @@ def check_case_status(URL, receipt_num):
     return case_status
 
 
-def send_sms(case_status, *argv):
+def send_sms(case_status):
+    sender = os.environ["SENDER"]
+    receivers = os.environ["RECEIVERS"]
     client = Client(account_sid, auth_token)
     message_body = "Your USCIS case status is as follows" + "\n" + case_status
-    for receiver in argv:
+    for receiver in receivers:
         message = client.messages.create(
-            body=message_body, from_="+16072282950", to=receiver
+            body=message_body, from_=sender, to=receiver
         )
 
 
 case_status = check_case_status(URL, "EAC1990110956")
-send_sms(case_status, "+16073795911", "+16073798219")
+send_sms(case_status)
