@@ -23,7 +23,7 @@ class Form:
 def invisible_driver(URL):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
-    driver = webdriver.Chrome(chrome_options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options)
     driver.get(URL)
     assert "Case Status" in driver.title
     return driver
@@ -47,13 +47,14 @@ def check_case_status(URL, receipt_num):
     return case_status
 
 
-def send_sms(case_status, receiver):
+def send_sms(case_status, *argv):
     client = Client(account_sid, auth_token)
     message_body = "Your USCIS case status is as follows" + "\n" + case_status
-    message = client.messages.create(
-        body=message_body, from_="+16072282950", to=receiver
-    )
+    for receiver in argv:
+        message = client.messages.create(
+            body=message_body, from_="+16072282950", to=receiver
+        )
 
 
 case_status = check_case_status(URL, "EAC1990110956")
-send_sms(case_status, receiver="+16073798219")
+send_sms(case_status, "+16073795911", "+16073798219")
